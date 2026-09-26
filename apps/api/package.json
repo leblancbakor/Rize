@@ -21,6 +21,7 @@
   "devDependencies": {
     "@rize/config": "workspace:*",
     "@types/node": "^22.7.4",
+    "eslint": "^9.11.1",
     "pino-pretty": "^11.2.2",
     "tsup": "^8.3.0",
     "tsx": "^4.19.1",

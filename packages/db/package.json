@@ -22,6 +22,7 @@
   "devDependencies": {
     "@rize/config": "workspace:*",
     "@types/node": "^22.7.4",
+    "eslint": "^9.11.1",
     "prisma": "^5.20.0",
     "typescript": "^5.6.2"
   }
