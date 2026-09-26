@@ -1,0 +1,221 @@
+// Rize data model — v0.1
+// Conventions:
+//   - IDs are cuid strings.
+//   - Money is stored as integer minor units (cents / USDC micro-units) + a currency code. Never floats.
+//   - Every state transition on an Invoice also writes an Event row (see packages/db/src/events.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Tenancy ----------
+
+/// A Discord guild that has installed Rize.
+model Server {
+  id            String   @id @default(cuid())
+  discordId     String   @unique
+  name          String
+  locale        String   @default("en")
+  currency      String   @default("USD") // display currency for prices
+  installedAt   DateTime @default(now())
+  uninstalledAt DateTime?
+
+  merchant  Merchant?
+  products  Product[]
+  invoices  Invoice[]
+  events    Event[]
+  discounts Discount[]
+}
+
+/// Payout configuration for a Server. Non-custodial: Rize never holds funds.
+model Merchant {
+  id       String @id @default(cuid())
+  serverId String @unique
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  /// Solana wallet that receives USDC / SOL. Base58 pubkey.
+  solanaWallet String?
+  /// Stripe Connect account id (acct_...). Cards settle here, Rize takes application_fee.
+  stripeAccountId String?
+  stripeOnboarded Boolean @default(false)
+
+  /// Which methods the merchant has enabled.
+  acceptSolanaUsdc Boolean @default(true)
+  acceptSolanaSol  Boolean @default(false)
+  acceptCard       Boolean @default(false)
+
+  /// Abandoned-cart DM settings
+  abandonDmEnabled    Boolean @default(true)
+  abandonDiscountBps  Int?    // optional discount offered in the DM, basis points
+
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+// ---------- Catalog ----------
+
+model Product {
+  id       String @id @default(cuid())
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  /// Price in minor units of `currency` (e.g. 1999 = $19.99).
+  priceMinor  Int
+  currency    String @default("USD")
+  /// null = unlimited
+  stock       Int?
+  active      Boolean @default(true)
+
+  delivery  DeliveryType
+  /// Role id to grant, message/file/license payload, or webhook URL — interpreted per `delivery`.
+  deliveryPayload Json?
+
+  /// Discord message that hosts the Buy button, so we can edit/remove it.
+  panelChannelId String?
+  panelMessageId String?
+
+  invoices  Invoice[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([serverId, active])
+}
+
+enum DeliveryType {
+  ROLE     // grant a Discord role
+  MESSAGE  // DM a message (text / file link / license key)
+  WEBHOOK  // POST to the merchant's endpoint
+}
+
+// ---------- Payments ----------
+
+/// One checkout attempt by one buyer. The central object of the system.
+model Invoice {
+  id        String @id @default(cuid())
+  serverId  String
+  server    Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  buyerDiscordId String
+  buyerLocale    String @default("en")
+
+  method   PaymentMethod
+  status   InvoiceStatus @default(CREATED)
+
+  /// Amount charged, minor units, in `currency`.
+  amountMinor Int
+  currency    String
+  /// Platform fee taken by Rize, minor units.
+  feeMinor    Int @default(0)
+  discountId  String?
+  discount    Discount? @relation(fields: [discountId], references: [id])
+
+  // --- Solana Pay ---
+  /// Unique reference pubkey embedded in the tx (Solana Pay spec). Used to find the tx on-chain.
+  solanaReference String? @unique
+  solanaTxSig     String? @unique
+
+  // --- Stripe ---
+  stripeCheckoutSessionId String? @unique
+  stripePaymentIntentId   String? @unique
+
+  /// The ephemeral/DM message showing the payment instructions, for later edits.
+  checkoutMessageId String?
+
+  expiresAt   DateTime
+  paidAt      DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events Event[]
+
+  @@index([serverId, status])
+  @@index([buyerDiscordId])
+  @@index([status, expiresAt])
+}
+
+enum PaymentMethod {
+  SOLANA_USDC
+  SOLANA_SOL
+  CARD
+}
+
+/// State machine — transitions are enforced in packages/payments/src/invoice-state.ts
+///   CREATED -> AWAITING -> PAID -> DELIVERED
+///   CREATED | AWAITING -> EXPIRED
+///   PAID | DELIVERED -> REFUNDED
+enum InvoiceStatus {
+  CREATED
+  AWAITING
+  PAID
+  DELIVERED
+  EXPIRED
+  REFUNDED
+}
+
+model Discount {
+  id       String @id @default(cuid())
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  code      String
+  bps       Int      // 1000 = 10% off
+  maxUses   Int?
+  uses      Int      @default(0)
+  expiresAt DateTime?
+  /// Auto-generated by the abandoned-cart flow (vs. merchant-created)
+  automatic Boolean  @default(false)
+
+  invoices  Invoice[]
+  createdAt DateTime  @default(now())
+
+  @@unique([serverId, code])
+}
+
+// ---------- Analytics ----------
+
+/// Append-only event log. Powers dashboard analytics and the sales pitch numbers.
+model Event {
+  id        String    @id @default(cuid())
+  serverId  String?
+  server    Server?   @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  invoiceId String?
+  invoice   Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  type      EventType
+  /// Free-form context (method, amount bucket, locale, time-to-pay ms, ...). Keep it flat.
+  data      Json?
+  createdAt DateTime  @default(now())
+
+  @@index([type, createdAt])
+  @@index([serverId, createdAt])
+}
+
+enum EventType {
+  SERVER_INSTALLED
+  SERVER_UNINSTALLED
+  PRODUCT_CREATED
+  INVOICE_CREATED
+  INVOICE_AWAITING
+  INVOICE_PAID
+  INVOICE_DELIVERED
+  INVOICE_EXPIRED
+  INVOICE_REFUNDED
+  ABANDON_DM_SENT
+  ABANDON_DM_CONVERTED
+}

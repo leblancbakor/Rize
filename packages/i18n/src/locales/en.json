@@ -1,0 +1,31 @@
+{
+  "common": {
+    "buy": "Buy",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "error": "Something went wrong. Please try again.",
+    "no_permission": "You need the Manage Server permission to do this."
+  },
+  "setup": {
+    "welcome": "Welcome to Rize. Let's get your server ready to sell in under five minutes.",
+    "ask_wallet": "Paste the Solana wallet address that should receive payments.",
+    "invalid_wallet": "That doesn't look like a valid Solana address.",
+    "done": "Setup complete. Use `/product add` to list your first product."
+  },
+  "checkout": {
+    "title": "Checkout — {product}",
+    "amount": "Amount: **{amount} {currency}**",
+    "pay_with_solana": "Scan the QR code or open the link in your wallet. This invoice expires in {minutes} minutes.",
+    "pay_with_card": "Click the button below to pay by card.",
+    "paid": "Payment received. Delivering your purchase…",
+    "delivered": "Done! Your purchase has been delivered.",
+    "expired": "This checkout expired.",
+    "abandon_dm": "Your checkout for **{product}** in **{server}** expired. Still interested? Use the button below to start a new one.",
+    "abandon_dm_discount": "Your checkout for **{product}** in **{server}** expired. Still interested? Here's {percent}% off if you complete it now."
+  },
+  "product": {
+    "added": "Product **{name}** added.",
+    "not_found": "Product not found.",
+    "out_of_stock": "This product is out of stock."
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@rize/payments",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@rize/db": "workspace:*",
+    "@solana/pay": "^0.2.5",
+    "@solana/web3.js": "^1.95.3",
+    "bignumber.js": "^9.1.2",
+    "stripe": "^17.2.0"
+  },
+  "devDependencies": {
+    "@rize/config": "workspace:*",
+    "@types/node": "^22.7.4",
+    "typescript": "^5.6.2",
+    "tsx": "^4.19.1"
+  }
+}
