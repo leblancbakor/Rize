@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
     "build": "tsup src/index.ts --format esm --target node22 --clean",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
@@ -14,7 +14,6 @@
     "@fastify/cors": "^10.0.1",
     "@rize/db": "workspace:*",
     "@rize/payments": "workspace:*",
-    "dotenv": "^16.4.5",
     "fastify": "^5.0.0",
     "zod": "^3.23.8"
   },

@@ -1,4 +1,4 @@
-import 'dotenv/config';
+// Env comes from the process. In dev, the package scripts load the repo-root .env via --env-file.
 import { z } from 'zod';
 
 const schema = z.object({

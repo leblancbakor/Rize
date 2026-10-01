@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
     "build": "tsup src/index.ts --format esm --target node22 --clean",
     "start": "node dist/index.js",
-    "deploy-commands": "tsx src/deploy-commands.ts",
+    "deploy-commands": "tsx --env-file=../../.env src/deploy-commands.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"
   },
@@ -16,7 +16,6 @@
     "@rize/i18n": "workspace:*",
     "@rize/payments": "workspace:*",
     "discord.js": "^14.16.3",
-    "dotenv": "^16.4.5",
     "pino": "^9.4.0",
     "zod": "^3.23.8"
   },

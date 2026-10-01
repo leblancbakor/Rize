@@ -10,9 +10,9 @@
   },
   "scripts": {
     "generate": "prisma generate",
-    "migrate": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
-    "studio": "prisma studio",
+    "migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "studio": "dotenv -e ../../.env -- prisma studio",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"
   },
@@ -22,6 +22,7 @@
   "devDependencies": {
     "@rize/config": "workspace:*",
     "@types/node": "^22.7.4",
+    "dotenv-cli": "^7.4.2",
     "eslint": "^9.11.1",
     "prisma": "^5.20.0",
     "typescript": "^5.6.2"
